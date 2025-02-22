@@ -1,0 +1,19 @@
+{
+	"parameters": {
+        "population": {
+            "size": 0,
+            "method": "grow"
+        },
+        "fitness": {
+            "method": ""
+        }
+    },
+	"generations": [{
+        "geneneration": 0,
+        "population": [{}],
+        "best_fitness": 0,
+        "best_individual": {},
+        "average_fitness": 0
+    }],
+	"data": {}
+}
