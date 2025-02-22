@@ -1,6 +1,8 @@
 import math
+import pandas as pd
+import numpy as np
 from assign1.utils import SingletonRandom
-from assign1.config_manager import ConfigurationManager
+from assign1.config_classes.config_manager import ConfigurationManager
 
 operators = ["+", "-", "*", "/", "sin", "cos", "exp", "log"]
 config_manager = ConfigurationManager()
@@ -46,14 +48,15 @@ class SyntaxTree:
 
         return get_depth_helper(self.root)
 
-    def evaluate(self, node, vals: dict):
+    def evaluate(self, node, vals: np.array):
+        # print("VALS: ", vals)
         assert isinstance(node, Node), "Node is not an instance of Node"
         if node.is_leaf():
-            return vals[node.value]
+            return float(vals[node.value])
 
         child_evals = []
         for i, child in enumerate(node.children):
-            child_evals = self.evaluate(child, vals)
+            child_evals.append(self.evaluate(child, vals))
 
         if node.value == "+":
             sum_val = 0
@@ -91,11 +94,18 @@ class SyntaxTree:
             return math.exp(child_evals[0])
 
         if node.value == "log":
-            return math.log(child_evals[0])
+            return math.log(child_evals[0]) if child_evals[0] > 0 else 0
 
-    def predict(self, vals: dict):
-        # TODO: Implement this method
-        raise NotImplementedError("TODO")
+    def predict(self, vals: dict = None):
+        if vals is None:
+            vals: pd.Dataframe = config_manager.get_config("data").get("train_data")
+        
+        predictions = []
+        for i in range(len(vals)):
+            # print("VALS: ", vals.iloc[i])
+            predictions.append(self.evaluate(self.root, vals.iloc[i]))
+
+        return predictions
 
     @staticmethod
     def generate_random_leaf():
@@ -107,9 +117,9 @@ class SyntaxTree:
         return Node(randomboi.choice(input_vals))
 
     @staticmethod
-    def generate_random_tree(depth: int):
+    def generate_random_tree(depth: int, max_depth: int):
 
-        if depth == config_manager.get_param("max_depth"):
+        if depth == max_depth:
             return SyntaxTree.generate_random_leaf()
 
         randomboi = SingletonRandom()
@@ -129,11 +139,11 @@ class SyntaxTree:
 
         if operator in ["+", "-", "*", "/"]:
             root = Node(operator)
-            root.children.append(SyntaxTree.generate_random_tree(depth + 1))
-            root.children.append(SyntaxTree.generate_random_tree(depth + 1))
+            root.children.append(SyntaxTree.generate_random_tree(depth + 1, max_depth))
+            root.children.append(SyntaxTree.generate_random_tree(depth + 1, max_depth))
         elif operator in ["sin", "cos", "exp", "log"]:
             root = Node(operator)
-            root.children.append(SyntaxTree.generate_random_tree(depth + 1))
+            root.children.append(SyntaxTree.generate_random_tree(depth + 1, max_depth))
         else:
             root = Node(operator)
 
@@ -142,25 +152,31 @@ class SyntaxTree:
         # return Node("x")
 
     @staticmethod
-    def generate_random_tree_grow():  # This function generates a tree of depth > 1 and < max_depth randomly
+    def generate_random_tree_grow(max_depth: int = 0):
         randomboi = SingletonRandom()
+
+        if max_depth == 0:
+            max_depth = config_manager.get_param("max_depth")
 
         operator = randomboi.choice(operators)
 
         root = Node(operator)
 
         if operator in ["+", "-", "*", "/"]:
-            root.children.append(SyntaxTree.generate_random_tree(2))
-            root.children.append(SyntaxTree.generate_random_tree(2))
+            root.children.append(SyntaxTree.generate_random_tree(2, max_depth))
+            root.children.append(SyntaxTree.generate_random_tree(2, max_depth))
         elif operator in ["sin", "cos", "exp", "log"]:
-            root.children.append(SyntaxTree.generate_random_tree(2))
+            root.children.append(SyntaxTree.generate_random_tree(2, max_depth))
 
         return SyntaxTree(root)
 
     @staticmethod
-    def generate_random_tree_full():
-        def grt_full_helper(depth: int):
-            if depth == config_manager.get_param("max_depth"):
+    def generate_random_tree_full(max_depth: int = 0):
+        if max_depth == 0:
+            max_depth = config_manager.get_param("max_depth")
+
+        def grt_full_helper(depth: int, max_depth: int):
+            if depth == max_depth:
                 return SyntaxTree.generate_random_leaf()
 
             operator = randomboi.choice(operators)
@@ -168,10 +184,10 @@ class SyntaxTree:
             root = Node(operator)
 
             if operator in ["+", "-", "*", "/"]:
-                root.children.append(grt_full_helper(depth + 1))
-                root.children.append(grt_full_helper(depth + 1))
+                root.children.append(grt_full_helper(depth + 1, max_depth))
+                root.children.append(grt_full_helper(depth + 1, max_depth))
             elif operator in ["sin", "cos", "exp", "log"]:
-                root.children.append(grt_full_helper(depth + 1))
+                root.children.append(grt_full_helper(depth + 1, max_depth))
 
             return root
 
@@ -182,9 +198,9 @@ class SyntaxTree:
         root = Node(operator)
 
         if operator in ["+", "-", "*", "/"]:
-            root.children.append(grt_full_helper(2))
-            root.children.append(grt_full_helper(2))
+            root.children.append(grt_full_helper(2, max_depth))
+            root.children.append(grt_full_helper(2, max_depth))
         elif operator in ["sin", "cos", "exp", "log"]:
-            root.children.append(grt_full_helper(2))
+            root.children.append(grt_full_helper(2, max_depth))
 
         return SyntaxTree(root)

@@ -1,12 +1,15 @@
 {
 	"parameters": {
         "population": {
-            "size": 0,
+            "size": 10,
             "method": "grow"
         },
         "fitness": {
-            "method": ""
-        }
+            "method": "hit_rate",
+            "better_fitness": "low",
+            "max_fitness": 100
+        },
+        "max_depth": 3
     },
 	"generations": [{
         "geneneration": 0,

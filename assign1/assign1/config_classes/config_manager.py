@@ -66,7 +66,11 @@ class ConfigurationManager(metaclass=SingletonMeta):
         return State(self.config)
 
     def load_configs(self, state):
-        self.config = state.config
+        self.config = state.configg
+
+    def load_configs_from_file(self, file_path):
+        with open(file_path, "r") as file:
+            self.config = json.load(file)
 
     def __str__(self):
         return json.dumps(self.config, indent=4)
