@@ -6,6 +6,7 @@ from assign1.config_classes.component_factory import ComponentFactory
 from sklearn.model_selection import train_test_split
 from assign1.population import Population
 from assign1.fitness_functions import error_function, raw_fitness_function, standardised_fitness_function, adjusted_fitness_function, normalised_fitness_function, hit_rate_fitness_function
+from assign1.selection_method import fitness_proportionate_selection, tournament_selection
 import pandas as pd
 import numpy as np
 
@@ -32,11 +33,23 @@ plugin_manager.register_plugin("fitness_adjusted", adjusted_fitness_function)
 plugin_manager.register_plugin("fitness_normalised", normalised_fitness_function)
 plugin_manager.register_plugin("fitness_hit_rate", hit_rate_fitness_function)
 
+plugin_manager.register_plugin("selection_fitness_proportionate", fitness_proportionate_selection)
+plugin_manager.register_plugin("selection_tournament", tournament_selection)
 
 population = component_factory.initialisation_method()
 
-tree = population.individuals[0]
+config_manager.set_config("population", population)
 
-predictions = tree.predict()
+# tree = population.individuals[0]
 
-print(component_factory.fitness_method(tree, predictions))
+# predictions = tree.predict()
+
+# print(component_factory.fitness_method(tree, predictions))
+
+for ind in population.individuals:
+    component_factory.fitness_method(ind, ind.predict())
+
+tree = component_factory.selection_method(population)
+
+print(tree)
+print(tree.fitness)

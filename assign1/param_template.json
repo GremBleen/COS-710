@@ -5,9 +5,13 @@
             "method": "grow"
         },
         "fitness": {
-            "method": "hit_rate",
+            "method": "standardised",
             "better_fitness": "low",
             "max_fitness": 100
+        },
+        "selection": {
+            "method": "tournament",
+            "tournament_size": 4
         },
         "max_depth": 3
     },

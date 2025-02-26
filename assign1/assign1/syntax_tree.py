@@ -7,11 +7,13 @@ from assign1.config_classes.config_manager import ConfigurationManager
 operators = ["+", "-", "*", "/", "sin", "cos", "exp", "log"]
 config_manager = ConfigurationManager()
 
+
 class Node:
 
     def __init__(self, value):
         self.value = value
         self.children = []
+        self.fitness = None
 
     def is_leaf(self):
         return len(self.children) == 0
@@ -99,7 +101,7 @@ class SyntaxTree:
     def predict(self, vals: dict = None):
         if vals is None:
             vals: pd.Dataframe = config_manager.get_config("data").get("train_data")
-        
+
         predictions = []
         for i in range(len(vals)):
             # print("VALS: ", vals.iloc[i])

@@ -19,14 +19,26 @@ class ComponentFactory:
         elif method == "full":
             plugin_manager.execute_plugin("initialisation_population_full", population)
         elif method == "ramped":
-            plugin_manager.execute_plugin("initialisation_population_ramped", population)
+            plugin_manager.execute_plugin(
+                "initialisation_population_ramped", population
+            )
         else:
             raise ValueError(f"Invalid initialisation method: {method}")
-        
+
         return population
 
-    def selection_method(self):
-        raise NotImplementedError
+    def selection_method(self, population=None):
+        selection_param = config_manager.get_param("selection")
+        method = selection_param.get("method")
+
+        if method == "fitness_proportionate":
+            return plugin_manager.execute_plugin(
+                "selection_fitness_proportionate", population
+            )
+        elif method == "tournament":
+            return plugin_manager.execute_plugin("selection_tournament", population)
+        else:
+            raise ValueError(f"Invalid selection method: {method}")
 
     def crossover_method(self):
         raise NotImplementedError
@@ -41,15 +53,19 @@ class ComponentFactory:
     #     raise NotImplementedError
 
     def fitness_method(self, ind, predictions=None):
-        assert isinstance(ind, SyntaxTree), "Individual is not an instance of SyntaxTree"
+        assert isinstance(
+            ind, SyntaxTree
+        ), "Individual is not an instance of SyntaxTree"
 
         fitness_param = config_manager.get_param("fitness")
         method = fitness_param.get("method")
 
         if method == "raw":
             return plugin_manager.execute_plugin("fitness_raw", ind, predictions)
-        elif method == "standard":
-            return plugin_manager.execute_plugin("fitness_standardised", ind, predictions)
+        elif method == "standardised":
+            return plugin_manager.execute_plugin(
+                "fitness_standardised", ind, predictions
+            )
         elif method == "adjusted":
             return plugin_manager.execute_plugin("fitness_adjusted", ind, predictions)
         elif method == "normalised":
