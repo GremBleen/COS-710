@@ -1,25 +1,107 @@
 import math
 import pandas as pd
 import numpy as np
+from termcolor import colored
 from assign1.utils import SingletonRandom
 from assign1.config_classes.config_manager import ConfigurationManager
 
-operators = ["+", "-", "*", "/", "sin", "cos", "exp", "log"]
+operators = [
+    "const",
+    "add",
+    "sub",
+    "mul",
+    "div",
+    "pow",
+    "sqrt",
+    "log",
+    "exp",
+    "max",
+    "ifleq",
+    "data",
+    "avg",
+]
+
+operations = {
+    "const": lambda p: p,
+    "data": lambda p, inp: inp[p],
+    "add": lambda p, inp: p[0].evaluate(inp) + p[1].evaluate(inp),
+    "sub": lambda p, inp: p[0].evaluate(inp) - p[1].evaluate(inp),
+    "mul": lambda p, inp: p[0].evaluate(inp) * p[1].evaluate(inp),
+    "div": lambda p, inp: (lambda x, y: x / y if y != 0 else 0)(
+        p[0].evaluate(inp), p[1].evaluate(inp)
+    ),
+    "pow": lambda p, inp: (
+        lambda x, y: (
+            (
+                lambda n, m: (
+                    0
+                    if (n < 0 and not float(m).is_integer()) or (n == 0 and m < 0)
+                    else float(n) ** float(m)
+                )
+            )(x, y)
+            if y != 0
+            else 1
+        )
+    )(p[0].evaluate(inp), p[1].evaluate(inp)),
+    "sqrt": lambda p, inp: (lambda x: math.sqrt(x) if x >= 0 else 0)(
+        p[0].evaluate(inp)
+    ),
+    "log": lambda p, inp: (lambda x: math.log(x, 2) if x > 0 else 0)(
+        p[0].evaluate(inp)
+    ),
+    "exp": lambda p, inp: (lambda x: x if x != float("inf") else 0)(
+        math.exp(p[0].evaluate(inp))
+    ),
+    "max": lambda p, inp: max(p[0].evaluate(inp), p[1].evaluate(inp)),
+    "ifleq": lambda p, inp: (
+        p[2].evaluate(inp)
+        if p[0].evaluate(inp) <= p[1].evaluate(inp)
+        else p[3].evaluate(inp)
+    ),
+    "avg": lambda p, inp: (p[0].evaluate(inp) + p[1].evaluate(inp)) / 2,
+}
+
+op_branches = {
+    "const": 0,
+    "add": 2,
+    "sub": 2,
+    "mul": 2,
+    "div": 2,
+    "pow": 2,
+    "sqrt": 1,
+    "log": 1,
+    "exp": 1,
+    "max": 2,
+    "ifleq": 4,
+    "data": 0,
+    "avg": 2,
+}
+
+# calls to op_constructors should be in the form of op_constructors["add"]("generation_function", depth, max_depth)
+op_constructors = {
+    4: lambda op, gen_func, depth, max_depth: Node(op, children=[gen_func(depth, max_depth), gen_func(depth, max_depth), gen_func(depth, max_depth), gen_func(depth, max_depth)]),
+    3: lambda op, gen_func, depth, max_depth: Node(op, children=[gen_func(depth, max_depth), gen_func(depth, max_depth), gen_func(depth, max_depth)]),
+    2: lambda op, gen_func, depth, max_depth: Node(op, children=[gen_func(depth, max_depth), gen_func(depth, max_depth)]),
+    1: lambda op, gen_func, depth, max_depth: Node(op, children=[gen_func(depth, max_depth)]),
+    0: lambda op, gen_func, depth, max_depth: SyntaxTree.generate_random_const() if op == "const" else SyntaxTree.generate_random_data(),
+}
+
 config_manager = ConfigurationManager()
 
 
 class Node:
     _id_counter = 0
 
-    def __init__(self, value):
+    def __init__(self, op, value=None, children=None):
         self.id = Node._id_counter
         Node._id_counter += 1
+        self.op = op
         self.value = value
-        self.children = []
+        self.children = children if children is not None else []
         self.fitness = None
 
     def is_leaf(self):
-        return len(self.children) == 0
+        return self.op in ["const", "data"]
 
     def walk(self):
         # if self.is_leaf():
@@ -33,10 +115,31 @@ class Node:
             assert isinstance(child, Node), "Child is not an instance of Node"
             yield from child.walk()
 
+    def evaluate(self, vals: np.array):
+        try:
+            ans = 0
+            if self.is_leaf():
+                if self.op == "const":
+                    ans = operations[self.op](self.value)
+                elif self.op == "data":
+                    ans = operations[self.op](self.value, vals)
+            else:
+                ans = operations[self.op](self.children, vals)
+
+            if ans == float("inf") or math.isnan(ans):
+                return 0
+            else:
+                return ans
+        except OverflowError:
+            return 0
+
     def __str__(self):
+        id_str = colored(str(self.id), "red")
         if self.is_leaf():
-            return str(self.id) + ":" + str(self.value)
-        return f"({self.id}:{self.value} {', '.join(str(child) for child in self.children)})"
+            return id_str + ":" + str(self.value)
+        return (
+            f"({id_str}:{self.op} {', '.join(str(child) for child in self.children)})"
+        )
 
 
 class SyntaxTree:
@@ -70,53 +173,8 @@ class SyntaxTree:
 
         return to_array_helper(self.root)
 
-    def evaluate(self, node, vals: np.array):
-        # print("VALS: ", vals)
-        assert isinstance(node, Node), "Node is not an instance of Node"
-        if node.is_leaf():
-            return float(vals[node.value])
-
-        child_evals = []
-        for i, child in enumerate(node.children):
-            child_evals.append(self.evaluate(child, vals))
-
-        if node.value == "+":
-            sum_val = 0
-            for j in child_evals:
-                sum_val += j
-            return sum_val
-
-        if node.value == "-":
-            sub_val = child_evals[0]
-            for j in child_evals[1:]:
-                sub_val -= j
-            return sub_val
-
-        if node.value == "*":
-            prod_val = 1
-            for j in child_evals:
-                prod_val *= j
-            return prod_val
-
-        if node.value == "/":
-            div_val = child_evals[0]
-            for j in child_evals[1:]:
-                if j == 0:
-                    return 0
-                div_val /= j
-            return div_val
-
-        if node.value == "sin":
-            return math.sin(child_evals[0])
-
-        if node.value == "cos":
-            return math.cos(child_evals[0])
-
-        if node.value == "exp":
-            return math.exp(child_evals[0])
-
-        if node.value == "log":
-            return math.log(child_evals[0]) if child_evals[0] > 0 else 0
+    def evaluate(self, vals: np.array):
+        return self.root.evaluate(vals)
 
     def predict(self, vals: dict = None):
         if vals is None:
@@ -125,49 +183,51 @@ class SyntaxTree:
         predictions = []
         for i in range(len(vals)):
             # print("VALS: ", vals.iloc[i])
-            predictions.append(self.evaluate(self.root, vals.iloc[i]))
+            predictions.append(self.evaluate(vals.iloc[i]))
 
         return predictions
 
     @staticmethod
-    def generate_random_leaf():
+    def generate_random_data():
         randomboi = SingletonRandom()
 
         input_vals = config_manager.get_config("data").get("train_data").columns
         input_vals = input_vals.drop("target")
 
-        return Node(randomboi.choice(input_vals))
+        return Node("data", randomboi.choice(input_vals))
+
+    @staticmethod
+    def generate_random_const():
+        randomboi = SingletonRandom()
+
+        return Node("const", randomboi.randint(-10, 10))
+
+    @staticmethod
+    def generate_random_leaf():
+        randomboi = SingletonRandom()
+
+        if randomboi.random() < 0.5:
+            return SyntaxTree.generate_random_const()
+        else:
+            return SyntaxTree.generate_random_data()
 
     @staticmethod
     def generate_random_tree(depth: int, max_depth: int):
-
         if depth == max_depth:
             return SyntaxTree.generate_random_leaf()
 
         randomboi = SingletonRandom()
 
-        input_vals = config_manager.get_config("data").get("train_data").columns
-        input_vals = input_vals.drop("target").to_list()
-
-        node_values = input_vals + operators
-
         # print("NV: ", node_values)
 
-        operator = randomboi.choice(node_values)
+        valid_ops = operators.copy()
+        valid_ops.remove("const")
+
+        operator = randomboi.choice(valid_ops)
 
         # print("OP: ", operator)
 
-        root = None
-
-        if operator in ["+", "-", "*", "/"]:
-            root = Node(operator)
-            root.children.append(SyntaxTree.generate_random_tree(depth + 1, max_depth))
-            root.children.append(SyntaxTree.generate_random_tree(depth + 1, max_depth))
-        elif operator in ["sin", "cos", "exp", "log"]:
-            root = Node(operator)
-            root.children.append(SyntaxTree.generate_random_tree(depth + 1, max_depth))
-        else:
-            root = Node(operator)
+        root = op_constructors[op_branches[operator]](operator, SyntaxTree.generate_random_tree, depth + 1, max_depth)
 
         return root
 
@@ -180,15 +240,14 @@ class SyntaxTree:
         if max_depth == 0:
             max_depth = config_manager.get_param("max_depth")
 
-        operator = randomboi.choice(operators)
+        root_ops = operators.copy()
+        root_ops.remove("const")
+        root_ops.remove("data")
 
-        root = Node(operator)
+        operator = randomboi.choice(root_ops)
 
-        if operator in ["+", "-", "*", "/"]:
-            root.children.append(SyntaxTree.generate_random_tree(2, max_depth))
-            root.children.append(SyntaxTree.generate_random_tree(2, max_depth))
-        elif operator in ["sin", "cos", "exp", "log"]:
-            root.children.append(SyntaxTree.generate_random_tree(2, max_depth))
+        # NOTE CALLING THIS WITH 2 INSTEAD OF 1 will cause the maximum recursion depth to be exceeded
+        root = op_constructors[op_branches[operator]](operator, SyntaxTree.generate_random_tree, 1, max_depth)
 
         return SyntaxTree(root)
 
@@ -201,28 +260,25 @@ class SyntaxTree:
             if depth == max_depth:
                 return SyntaxTree.generate_random_leaf()
 
-            operator = randomboi.choice(operators)
+            root_ops = operators.copy()
+            root_ops.remove("const")
+            root_ops.remove("data")
 
-            root = Node(operator)
+            operator = randomboi.choice(root_ops)
 
-            if operator in ["+", "-", "*", "/"]:
-                root.children.append(grt_full_helper(depth + 1, max_depth))
-                root.children.append(grt_full_helper(depth + 1, max_depth))
-            elif operator in ["sin", "cos", "exp", "log"]:
-                root.children.append(grt_full_helper(depth + 1, max_depth))
+            root = op_constructors[op_branches[operator]](operator, grt_full_helper, depth + 1, max_depth)
 
             return root
 
         randomboi = SingletonRandom()
 
-        operator = randomboi.choice(operators)
+        root_ops = operators.copy()
+        root_ops.remove("const")
+        root_ops.remove("data")
 
-        root = Node(operator)
+        operator = randomboi.choice(root_ops)
 
-        if operator in ["+", "-", "*", "/"]:
-            root.children.append(grt_full_helper(2, max_depth))
-            root.children.append(grt_full_helper(2, max_depth))
-        elif operator in ["sin", "cos", "exp", "log"]:
-            root.children.append(grt_full_helper(2, max_depth))
+        # NOTE CALLING THIS WITH 2 INSTEAD OF 1 will cause the maximum recursion depth to be exceeded
+        root = op_constructors[op_branches[operator]](operator, grt_full_helper, 1, max_depth)
 
         return SyntaxTree(root)

@@ -5,6 +5,7 @@ from copy import deepcopy
 
 config_manager = ConfigurationManager()
 
+
 def single_point_crossover(ind1, ind2):  # Single point crossover
     assert isinstance(ind1, SyntaxTree), "ind1 must be an instance of SyntaxTree"
     assert isinstance(ind2, SyntaxTree), "ind2 must be an instance of SyntaxTree"
@@ -34,7 +35,7 @@ def subtree_mutation(ind):
     randomboi = SingletonRandom()
 
     copy_ind = deepcopy(ind)
-    
+
     subtree = SyntaxTree.generate_random_tree(1, config_manager.get_param("max_depth"))
 
     ind_array = copy_ind.to_array()
@@ -44,6 +45,7 @@ def subtree_mutation(ind):
     mutated_ind = swap_subtree(copy_ind, ind_array[ind_cop].id, subtree.root)
 
     return prune_tree(mutated_ind)
+
 
 def swap_subtree(ind, node_id, subtree):
     assert isinstance(ind, SyntaxTree), "ind must be an instance of SyntaxTree"
@@ -58,9 +60,10 @@ def swap_subtree(ind, node_id, subtree):
                 node.children[i] = subtree_copy
                 return copy_ind
 
+
 def prune_tree(ind):
     def prune_tree_helper(depth, node):
-        if depth >= config_manager.get_param("max_depth"):
+        if depth > config_manager.get_param("max_depth"):
             return SyntaxTree.generate_random_leaf()
         else:
             for i, child in enumerate(node.children):
@@ -74,5 +77,5 @@ def prune_tree(ind):
 
 
 def crossover_mutation_genetic_operator():
-    #TODO
+    # TODO
     raise NotImplementedError

@@ -1,4 +1,4 @@
-from assign1.syntax_tree import Node, SyntaxTree
+from assign1.syntax_tree import Node, SyntaxTree, op_constructors, op_branches
 from assign1.utils import SingletonRandom
 from assign1.config_classes.config_manager import ConfigurationManager
 from assign1.config_classes.plugin_manager import PluginManager
@@ -11,14 +11,16 @@ from assign1.genetic_operators import single_point_crossover, subtree_mutation, 
 import pandas as pd
 import numpy as np
 
-randomboi = SingletonRandom(40)
+seed = 20
+
+randomboi = SingletonRandom(seed)
 config_manager = ConfigurationManager()
 plugin_manager = PluginManager()
 component_factory = ComponentFactory()
 
 data = pd.read_csv("192_vineyard.tsv", sep="\t")
 
-train, test = train_test_split(data, test_size=0.2, random_state=40)
+train, test = train_test_split(data, test_size=0.2, random_state=seed)
 
 config_manager.load_configs_from_file("param_template.json")
 
@@ -45,25 +47,27 @@ population = component_factory.initialisation_method()
 
 config_manager.set_config("population", population)
 
-# tree = population.individuals[0]
+test_node = op_constructors[op_branches["add"]]("add", SyntaxTree.generate_random_tree, 1, 3)
+print("TestNode: ", test_node)
 
-# predictions = tree.predict()
-
-# print(component_factory.fitness_method(tree, predictions))
+test_tree = SyntaxTree.generate_random_tree_grow(3)
+print("TestTree: ", test_tree)
 
 for ind in population.individuals:
     component_factory.fitness_method(ind, ind.predict())
 
-tree = component_factory.selection_method(population)
-rand_tree = SyntaxTree(SyntaxTree.generate_random_tree(3, 4))
+tree1 = component_factory.selection_method(population)
+tree2 = component_factory.selection_method(population)
+tree3 = component_factory.selection_method(population)
+rand_tree = SyntaxTree(SyntaxTree.generate_random_tree(1, 4))
 
-print(tree)
-print(rand_tree)
+print("TREE1 ", tree1)
+print("TREE3 ", tree3)
 
-child1, child2 = single_point_crossover(tree, rand_tree)
+child1, child2 = single_point_crossover(tree1, tree3)
 
-print(child1)
-print(child2)
+print("CHILD1: ",child1)
+print("CHILD2: ",child2)
 
-print("PRUNE", prune_tree(tree))
+# print("PRUNE", prune_tree(tree))
 # print(tree.fitness)

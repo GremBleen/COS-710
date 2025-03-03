@@ -2,7 +2,7 @@
 	"parameters": {
         "population": {
             "size": 10,
-            "method": "grow"
+            "method": "full"
         },
         "fitness": {
             "method": "standardised",
