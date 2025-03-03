@@ -39,12 +39,42 @@ class ComponentFactory:
             return plugin_manager.execute_plugin("selection_tournament", population)
         else:
             raise ValueError(f"Invalid selection method: {method}")
+        
+    def genetic_operator_method(self):
+        genetic_param = config_manager.get_param("genetic_operators")
+        method = genetic_param.get("method")
+
+        if method == "crossover_mutation":
+            return plugin_manager.execute_plugin("genetic_operator_crossover_mutation")
+        else:
+            raise ValueError(f"Invalid genetic operator method: {method}")
 
     def crossover_method(self):
-        raise NotImplementedError
+        crossover_param = config_manager.get_param("genetic_operators").get("crossover")
+        method = crossover_param.get("method")
+
+        if method == "single_point":
+            return plugin_manager.execute_plugin("crossover_single_point")
+        elif method == "two_point":
+            raise NotImplementedError
+            # return plugin_manager.execute_plugin("crossover_two_point")
+        elif method == "uniform":
+            raise NotImplementedError
+            # return plugin_manager.execute_plugin("crossover_uniform")
+        else:
+            raise ValueError(f"Invalid crossover method: {method}")
 
     def mutation_method(self):
-        raise NotImplementedError
+        mutation_param = config_manager.get_param("genetic_operators").get("mutation")
+        method = mutation_param.get("method")
+
+        if method == "point":
+            raise NotImplementedError
+            # return plugin_manager.execute_plugin("mutation_point")
+        elif method == "subtree":
+            return plugin_manager.execute_plugin("mutation_subtree")
+        else:
+            raise ValueError(f"Invalid mutation method: {method}")
 
     # def replacement_method(self):
     #     raise NotImplementedError

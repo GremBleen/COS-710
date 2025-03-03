@@ -13,6 +13,17 @@
             "method": "tournament",
             "tournament_size": 4
         },
+        "genetic_operators": {
+            "method": "crossover_mutation",
+            "crossover": {
+                "method": "single_point",
+                "crossover_rate": 0.6
+            },
+            "mutation": {
+                "method": "subtree",
+                "mutation_rate": 0.4
+            }
+        },
         "max_depth": 3
     },
 	"generations": [{

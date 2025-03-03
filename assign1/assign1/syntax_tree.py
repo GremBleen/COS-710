@@ -9,8 +9,11 @@ config_manager = ConfigurationManager()
 
 
 class Node:
+    _id_counter = 0
 
     def __init__(self, value):
+        self.id = Node._id_counter
+        Node._id_counter += 1
         self.value = value
         self.children = []
         self.fitness = None
@@ -19,18 +22,21 @@ class Node:
         return len(self.children) == 0
 
     def walk(self):
-        if self.is_leaf():
-            yield self
-        else:
-            for child in self.children:
-                print(child)
-                assert isinstance(child, Node), "Child is not an instance of Node"
-                yield child.walk()
+        # if self.is_leaf():
+        #     yield self
+        # else:
+        #     for child in self.children:
+        #         assert isinstance(child, Node), "Child is not an instance of Node"
+        #         yield child.walk()
+        yield self
+        for child in self.children:
+            assert isinstance(child, Node), "Child is not an instance of Node"
+            yield from child.walk()
 
     def __str__(self):
         if self.is_leaf():
-            return str(self.value)
-        return f"{self.value} ({', '.join(str(child) for child in self.children)})"
+            return str(self.id) + ":" + str(self.value)
+        return f"({self.id}:{self.value} {', '.join(str(child) for child in self.children)})"
 
 
 class SyntaxTree:
@@ -42,6 +48,9 @@ class SyntaxTree:
     def __str__(self):
         return str(self.root)
 
+    def walk(self):
+        yield from self.root.walk()
+
     def get_depth(self):
         def get_depth_helper(node):
             if node.is_leaf():
@@ -49,6 +58,17 @@ class SyntaxTree:
             return 1 + max(get_depth_helper(child) for child in node.children)
 
         return get_depth_helper(self.root)
+
+    def to_array(self):
+        def to_array_helper(node):
+            if node.is_leaf():
+                return [node]
+
+            return [node] + [
+                item for child in node.children for item in to_array_helper(child)
+            ]
+
+        return to_array_helper(self.root)
 
     def evaluate(self, node, vals: np.array):
         # print("VALS: ", vals)
