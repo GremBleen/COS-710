@@ -1,5 +1,6 @@
 import json
 from assign1.state import State
+from copy import deepcopy
 
 class SingletonMeta(type):
     """
@@ -43,12 +44,12 @@ class ConfigurationManager(metaclass=SingletonMeta):
     def get_params(self):
         return self.config.get("parameters")
 
-    def update_configs(self, new_configs):
-        self.config.update(new_configs)
+    def update_configs(self, key, new_configs):
+        self.config[key].update(new_configs)
 
-    def update_params(self, new_params):
+    def update_params(self, key, new_params):
         params = self.config.get("parameters")
-        params.update(new_params)
+        params[key].update(new_params)
         self.config["parameters"] = params
 
     def update_configs_deep(self, **kwargs):
@@ -71,6 +72,14 @@ class ConfigurationManager(metaclass=SingletonMeta):
     def load_configs_from_file(self, file_path):
         with open(file_path, "r") as file:
             self.config = json.load(file)
+
+    def save_configs_to_file(self, file_path):
+        with open(file_path, "w") as file:
+            copy = deepcopy(self.config)
+
+            copy.pop("population")
+            copy.pop("data")
+            json.dump(copy, file , indent=4)
 
     def __str__(self):
         return json.dumps(self.config, indent=4)

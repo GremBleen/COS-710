@@ -49,12 +49,12 @@ class ComponentFactory:
         else:
             raise ValueError(f"Invalid genetic operator method: {method}")
 
-    def crossover_method(self):
+    def crossover_method(self, ind1, ind2):
         crossover_param = config_manager.get_param("genetic_operators").get("crossover")
         method = crossover_param.get("method")
 
         if method == "single_point":
-            return plugin_manager.execute_plugin("crossover_single_point")
+            return plugin_manager.execute_plugin("crossover_single_point", ind1, ind2)
         elif method == "two_point":
             raise NotImplementedError
             # return plugin_manager.execute_plugin("crossover_two_point")
@@ -64,7 +64,7 @@ class ComponentFactory:
         else:
             raise ValueError(f"Invalid crossover method: {method}")
 
-    def mutation_method(self):
+    def mutation_method(self, ind):
         mutation_param = config_manager.get_param("genetic_operators").get("mutation")
         method = mutation_param.get("method")
 
@@ -72,7 +72,7 @@ class ComponentFactory:
             raise NotImplementedError
             # return plugin_manager.execute_plugin("mutation_point")
         elif method == "subtree":
-            return plugin_manager.execute_plugin("mutation_subtree")
+            return plugin_manager.execute_plugin("mutation_subtree", ind)
         else:
             raise ValueError(f"Invalid mutation method: {method}")
 
@@ -104,3 +104,12 @@ class ComponentFactory:
             return plugin_manager.execute_plugin("fitness_hit_rate", ind, predictions)
         else:
             raise ValueError(f"Invalid fitness method: {method}")
+
+    def genetic_operator_method(self):
+        genetic_param = config_manager.get_param("genetic_operators")
+        method = genetic_param.get("method")
+
+        if method == "crossover_mutation":
+            return plugin_manager.execute_plugin("genetic_operator_crossover_mutation")
+        else:
+            raise ValueError(f"Invalid genetic operator method: {method}")

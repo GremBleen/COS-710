@@ -1,7 +1,7 @@
 {
 	"parameters": {
         "population": {
-            "size": 10,
+            "size": 100,
             "method": "full"
         },
         "fitness": {
@@ -17,21 +17,18 @@
             "method": "crossover_mutation",
             "crossover": {
                 "method": "single_point",
-                "crossover_rate": 0.6
+                "rate": 0.7
             },
             "mutation": {
                 "method": "subtree",
-                "mutation_rate": 0.4
+                "rate": 0.3
             }
         },
-        "max_depth": 3
-    },
-	"generations": [{
-        "geneneration": 0,
-        "population": [{}],
-        "best_fitness": 0,
-        "best_individual": {},
-        "average_fitness": 0
-    }],
-	"data": {}
+        "max_depth": 4,
+        "stopping_criteria": {
+            "method": "max_generations",
+            "max_generations": 30
+        },
+        "seed": 20
+    }
 }

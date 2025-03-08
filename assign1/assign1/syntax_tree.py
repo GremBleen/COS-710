@@ -134,7 +134,23 @@ class Node:
             return 0
 
     def __str__(self):
+        id_str = str(self.id)
+        if self.is_leaf():
+            return id_str + ":" + str(self.value)
+        return (
+            f"({id_str}:{self.op} {', '.join(str(child) for child in self.children)})"
+        )
+
+    def to_string_colored(self):
         id_str = colored(str(self.id), "red")
+        if self.is_leaf():
+            return id_str + ":" + str(self.value)
+        return (
+            f"({id_str}:{self.op} {', '.join(child.to_string_colored() for child in self.children)})"
+        )
+
+    def to_string(self):
+        id_str = str(self.id)
         if self.is_leaf():
             return id_str + ":" + str(self.value)
         return (
@@ -150,6 +166,15 @@ class SyntaxTree:
 
     def __str__(self):
         return str(self.root)
+    
+    def to_string_colored(self):
+        return self.root.to_string_colored()
+    
+    def to_string(self):
+        return self.root.to_string()
+    
+    def to_json(self):
+        return {"tree": str(self), "fitness": self.fitness}
 
     def walk(self):
         yield from self.root.walk()

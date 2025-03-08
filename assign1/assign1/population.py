@@ -5,6 +5,7 @@ from assign1.syntax_tree import SyntaxTree
 
 config_manager = ConfigurationManager()
 
+
 class Population:
     def __init__(self):
         self.individuals = []
@@ -74,3 +75,12 @@ class Population:
                     )
 
         return pop
+    
+    def to_json(self):
+        return [{"tree": str(ind), "fitness": ind.fitness} for ind in self.individuals]
+
+    def average_fitness(self):
+        return sum([ind.fitness for ind in self.individuals]) / len(self.individuals)
+
+    def best_individual(self):
+        return max(self.individuals, key=lambda x: x.fitness)
